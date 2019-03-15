@@ -5,6 +5,8 @@ import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
 import android.util.Log;
+import android.view.View;
+import android.widget.Button;
 import android.widget.Toast;
 
 import com.google.android.gms.common.api.Status;
@@ -21,7 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
-public class MainActivity extends AppCompatActivity {
+public class MainActivity extends AppCompatActivity implements View.OnClickListener {
 
     final static int RADIUS = 10;
 
@@ -29,6 +31,7 @@ public class MainActivity extends AppCompatActivity {
     LocationAdapter adapter;
     ArrayList<Location> locations;
     DatabaseHelper mDatabaseHelper;
+    Button send;
 
 
     private GeofencingClient geofencingClient;
@@ -38,6 +41,10 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        send = findViewById(R.id.send);
+        send.setOnClickListener(this);
+
 
         geofencingClient = LocationServices.getGeofencingClient(this);
 
@@ -82,22 +89,24 @@ public class MainActivity extends AppCompatActivity {
                 Location l = new Location(place.getName(), place.getAddress(), lat, lon);
                 locations.add(l);
                 addLocationToDB(l);
-
-                geofenceList.add(new Geofence.Builder()
-                        // Set the request ID of the geofence. This is a string to identify this
-                        // geofence.
-                        .setRequestId(l.getAddress())
-
-                        .setCircularRegion(
-                                l.getLat(),
-                                l.getLon(),
-                                RADIUS
-                        )
-                        .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-                                Geofence.GEOFENCE_TRANSITION_EXIT)
-                        .build());
-
                 adapter.notifyDataSetChanged();
+
+                // couldn't get working completely.
+//                geofenceList.add(new Geofence.Builder()
+//                        // Set the request ID of the geofence. This is a string to identify this
+//                        // geofence.
+//                        .setRequestId(l.getName())
+//
+//                        .setCircularRegion(
+//                                l.getLat(),
+//                                l.getLon(),
+//                                RADIUS
+//                        )
+//                        .setExpirationDuration(10000)
+//                        .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
+//                                Geofence.GEOFENCE_TRANSITION_EXIT)
+//                        .build());
+
             }
 
             @Override
@@ -115,6 +124,15 @@ public class MainActivity extends AppCompatActivity {
             Toast.makeText(this, "Successfully added the location", Toast.LENGTH_LONG).show();
         } else {
             Toast.makeText(this, "Error in adding the location", Toast.LENGTH_LONG).show();
+        }
+    }
+
+    @Override
+    public void onClick(View v) {
+        switch (v.getId()) {
+            case (R.id.send):
+                // go to the maps screen
+                break;
         }
     }
 }
