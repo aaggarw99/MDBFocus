@@ -1,22 +1,17 @@
 package com.example.mdbfocus;
 
-import android.app.SearchManager;
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.support.v7.widget.SearchView;
 import android.util.Log;
-import android.view.Menu;
-import android.view.MenuItem;
+import android.widget.Toast;
 
 import com.google.android.gms.common.api.Status;
-import com.google.android.gms.common.internal.Constants;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingClient;
-import com.google.android.gms.location.LocationServices;
+import com.google.android.gms.maps.model.LatLng;
+import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
 import com.google.android.libraries.places.widget.AutocompleteSupportFragment;
 import com.google.android.libraries.places.widget.listener.PlaceSelectionListener;
@@ -30,7 +25,8 @@ public class MainActivity extends AppCompatActivity {
     RecyclerView listOfLocations;
     LocationAdapter adapter;
     ArrayList<Location> locations;
-    SearchView search;
+    DatabaseHelper mDatabaseHelper;
+
 
     private GeofencingClient geofencingClient;
     private List<Geofence> geofenceList;
@@ -40,9 +36,10 @@ public class MainActivity extends AppCompatActivity {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
 
-        locations = new ArrayList<>();
-        // test data for now
-        locations.add(new Location("Moffitt", 100, 100));
+        mDatabaseHelper = new DatabaseHelper(this);
+
+        // gets stored data in database
+        locations = mDatabaseHelper.getAllData();
 
         listOfLocations = findViewById(R.id.rv);
         listOfLocations.setLayoutManager(new LinearLayoutManager(this));
@@ -57,12 +54,27 @@ public class MainActivity extends AppCompatActivity {
         // Specify the types of place data to return.
         autocompleteFragment.setPlaceFields(Arrays.asList(Place.Field.ID, Place.Field.NAME));
 
+        Places.initialize(this, Environment.API_KEY);
+
         // Set up a PlaceSelectionListener to handle the response.
         autocompleteFragment.setOnPlaceSelectedListener(new PlaceSelectionListener() {
             @Override
             public void onPlaceSelected(Place place) {
-                // TODO: Get info about the selected place.
-                Log.i("SUCCESS!!!!", "Place: " + place.getName() + ", " + place.getId());
+                LatLng latLng = place.getLatLng();
+                double lat, lon;
+                if (latLng == null) {
+                    lat = 0;
+                    lon = 0;
+                } else {
+                    lat = latLng.latitude;
+                    lon = latLng.longitude;
+                }
+                Log.i("Location info", "Name: " + place.getName() + "; Address: " + place.getAddress()
+                + "; Lat: " + lat + "; Lon: " + lon);
+                Location l = new Location(place.getName(), place.getAddress(), lat, lon);
+                locations.add(l);
+                addLocationToDB(l);
+                adapter.notifyDataSetChanged();
             }
 
             @Override
@@ -72,64 +84,14 @@ public class MainActivity extends AppCompatActivity {
             }
         });
 
-//        geofencingClient = LocationServices.getGeofencingClient(this);
-//
-//        geofenceList = new ArrayList<>();
-//
-//        geofenceList.add(new Geofence.Builder()
-//                // Set the request ID of the geofence. This is a string to identify this
-//                // geofence.
-//                .setRequestId(entry.getKey())
-//
-//                .setCircularRegion(
-//                        entry.getValue().latitude,
-//                        entry.getValue().longitude,
-//                        50
-//                )
-//                .setExpirationDuration(5000)
-//                .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
-//                        Geofence.GEOFENCE_TRANSITION_EXIT)
-//                .build());
-
     }
 
-    @Override
-    public boolean onCreateOptionsMenu(Menu menu) {
-        getMenuInflater().inflate(R.menu.main_menu, menu);
-
-        SearchManager searchManager = (SearchManager) getSystemService(Context.SEARCH_SERVICE);
-        final SharedPreferences sharedPref = this.getPreferences(Context.MODE_PRIVATE);
-
-
-
-        search = (SearchView) menu.findItem(R.id.action_search).getActionView();
-        search.setSearchableInfo(searchManager.getSearchableInfo(getComponentName()));
-        search.setQueryHint("Enter description here");
-
-        final MenuItem searchItem = menu.findItem(R.id.action_search);
-        final SearchView searchView = (SearchView) searchItem.getActionView();
-        searchView.setOnQueryTextListener(new SearchView.OnQueryTextListener() {
-            @Override
-            public boolean onQueryTextSubmit(String s) {
-                return false;
-            }
-
-            @Override
-            public boolean onQueryTextChange(String s) {
-                s = s.toLowerCase();
-                List<Location> filteredList = new ArrayList<>();
-                for (Location l : locations) {
-                    String locationName = l.getName().toLowerCase();
-                    if (locationName.contains(s)) {
-                        filteredList.add(l);
-                    }
-                }
-                adapter.setSearchOperation(filteredList);
-
-                return false;
-            }
-        });
-
-        return true;
+    private void addLocationToDB(Location l) {
+        boolean success = mDatabaseHelper.addData(l);
+        if (success) {
+            Toast.makeText(this, "Successfully added the location", Toast.LENGTH_LONG).show();
+        } else {
+            Toast.makeText(this, "Error in adding the location", Toast.LENGTH_LONG).show();
+        }
     }
 }
