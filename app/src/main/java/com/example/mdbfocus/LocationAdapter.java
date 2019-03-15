@@ -65,7 +65,7 @@ public class LocationAdapter extends RecyclerView.Adapter<RecyclerView.ViewHolde
         // handles when cell is clicked on
         @Override
         public void onClick(View v) {
-            Location purchase = locations.get(getAdapterPosition());
+            Location location = locations.get(getAdapterPosition());
 //            Intent intent = new Intent(context, LocationDetail.class);
 //            intent.putExtra("NAME", purchase.getName());
 //
