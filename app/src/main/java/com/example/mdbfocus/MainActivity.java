@@ -10,6 +10,7 @@ import android.widget.Toast;
 import com.google.android.gms.common.api.Status;
 import com.google.android.gms.location.Geofence;
 import com.google.android.gms.location.GeofencingClient;
+import com.google.android.gms.location.LocationServices;
 import com.google.android.gms.maps.model.LatLng;
 import com.google.android.libraries.places.api.Places;
 import com.google.android.libraries.places.api.model.Place;
@@ -21,6 +22,8 @@ import java.util.Arrays;
 import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
+
+    final static int RADIUS = 10;
 
     RecyclerView listOfLocations;
     LocationAdapter adapter;
@@ -35,6 +38,11 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+
+        geofencingClient = LocationServices.getGeofencingClient(this);
+
+
+
 
         mDatabaseHelper = new DatabaseHelper(this);
 
@@ -74,6 +82,21 @@ public class MainActivity extends AppCompatActivity {
                 Location l = new Location(place.getName(), place.getAddress(), lat, lon);
                 locations.add(l);
                 addLocationToDB(l);
+
+                geofenceList.add(new Geofence.Builder()
+                        // Set the request ID of the geofence. This is a string to identify this
+                        // geofence.
+                        .setRequestId(l.getAddress())
+
+                        .setCircularRegion(
+                                l.getLat(),
+                                l.getLon(),
+                                RADIUS
+                        )
+                        .setTransitionTypes(Geofence.GEOFENCE_TRANSITION_ENTER |
+                                Geofence.GEOFENCE_TRANSITION_EXIT)
+                        .build());
+
                 adapter.notifyDataSetChanged();
             }
 
